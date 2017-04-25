@@ -110,11 +110,28 @@ ALTER SEQUENCE projects_id_seq OWNED BY projects.id;
 CREATE TABLE students (
     first_name character varying(30),
     last_name character varying(30),
-    github character varying(30)
+    github character varying(30) NOT NULL
 );
 
 
 ALTER TABLE students OWNER TO "user";
+
+--
+-- Name: report_card_view; Type: VIEW; Schema: public; Owner: user
+--
+
+CREATE VIEW report_card_view AS
+ SELECT students.first_name,
+    students.last_name,
+    projects.title,
+    projects.max_grade,
+    grades.grade
+   FROM ((students
+     JOIN grades ON (((students.github)::text = (grades.student_github)::text)))
+     JOIN projects ON (((projects.title)::text = (grades.project_title)::text)));
+
+
+ALTER TABLE report_card_view OWNER TO "user";
 
 --
 -- Name: id; Type: DEFAULT; Schema: public; Owner: user
@@ -161,8 +178,8 @@ COPY projects (id, title, description, max_grade) FROM stdin;
 1	Markov	Tweets generated from Markov chains	50
 2	Blockly	Programmatic Logic Puzzle Game	100
 3	Baloonicorn	Gives cupcake recipes	500
-4	Madibs	Makes madlib puzzles	40
 5	Pizza	Suggests nearby pizza restaurants	300
+4	Madlibs	Makes madlib puzzles	40
 \.
 
 
@@ -197,6 +214,37 @@ ALTER TABLE ONLY grades
 
 ALTER TABLE ONLY projects
     ADD CONSTRAINT projects_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: students_pkey; Type: CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY students
+    ADD CONSTRAINT students_pkey PRIMARY KEY (github);
+
+
+--
+-- Name: projects_title_idx; Type: INDEX; Schema: public; Owner: user
+--
+
+CREATE UNIQUE INDEX projects_title_idx ON projects USING btree (title);
+
+
+--
+-- Name: grades_project_title_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY grades
+    ADD CONSTRAINT grades_project_title_fkey FOREIGN KEY (project_title) REFERENCES projects(title);
+
+
+--
+-- Name: grades_student_github_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
+--
+
+ALTER TABLE ONLY grades
+    ADD CONSTRAINT grades_student_github_fkey FOREIGN KEY (student_github) REFERENCES students(github);
 
 
 --
